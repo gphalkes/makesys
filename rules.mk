@@ -24,6 +24,10 @@
 # - Extra dependencies can be defined after inclusion of this file. If only
 #   the order is important, use an order only dependency: "test: | libX.la"
 
+ifndef TARGETS
+$(error TARGETS not defined. See $(lastword $(MAKEFILE_LIST)) for details)
+endif
+
 .PHONY: all clean
 
 all: $(TARGETS) $(EXTRATARGETS)
