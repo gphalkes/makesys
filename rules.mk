@@ -41,7 +41,10 @@ SOURCES:= $(CFILES) $(GFILES) $(LFILES) $(LCFILES)
 # force use of our pattern rule for lex files
 $(foreach FILE, $(LFILES), $(eval $(patsubst %.l, .objects/%.o, $(FILE)): $(patsubst %.l, .objects/%.c,$(FILE))))
 
-OBJECTS:=$(CFILES:.c=.o) $(LFILES:.l=.o) $(GFILES:.g=.o) $(LCFILES:.c=.lo)
+OBJECTS:=$(patsubst %.c, .objects/%.o, $(CFILES)) \
+	$(patsubst %.l, .objects/%.o, $(LFILES)) \
+	$(patsubst %.g, .objects/%.o, $(GFILES)) \
+	$(patsubst %.c, .objects/*.lo, $(LCFILES))
 $(foreach PART, $(TARGETS), $(eval OBJECTS.$(PART):= \
 	$$(patsubst %.c, .objects/%.o, $$(CFILES.$(PART))) \
 	$$(patsubst %.g, .objects/%.o, $$(GFILES.$(PART))) \
@@ -92,7 +95,7 @@ $(foreach FILE, $(GFILES), $(if $(DEPS.$(FILE)), $(eval $(patsubst %.c, %.lo, $(
 	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
 	flex -o $@ $<
 
-clean:
+clean::
 	rm -rf $(TARGETS) .deps .objects .libs >/dev/null 2>&1
 
 -include $(DEPENDENCIES)
