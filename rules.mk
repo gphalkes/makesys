@@ -44,7 +44,7 @@ $(foreach FILE, $(LFILES), $(eval $(patsubst %.l, .objects/%.o, $(FILE)): $(pats
 OBJECTS:=$(patsubst %.c, .objects/%.o, $(CFILES)) \
 	$(patsubst %.l, .objects/%.o, $(LFILES)) \
 	$(patsubst %.g, .objects/%.o, $(GFILES)) \
-	$(patsubst %.c, .objects/*.lo, $(LCFILES))
+	$(patsubst %.c, .objects/%.lo, $(LCFILES))
 $(foreach PART, $(TARGETS), $(eval OBJECTS.$(PART):= \
 	$$(patsubst %.c, .objects/%.o, $$(CFILES.$(PART))) \
 	$$(patsubst %.g, .objects/%.o, $$(GFILES.$(PART))) \
@@ -61,7 +61,7 @@ $(foreach PART, $(filter lib%.la, $(TARGETS)), $(eval $(PART): $$(OBJECTS.$(PART
 		-o $$@ $$^ $$(LDLIBS) $$(LDLIBS.$(PART)) -rpath /usr/lib))
 # Add dependency rules for grammar files. Header files generated from grammar
 # files are needed by the lexical analyser and other files
-$(foreach FILE, $(GFILES), $(if $(DEPS.$(FILE)), $(eval $(patsubst %.c, %.lo, $(patsubst %.l, %.c, $(patsubst %, .objects/%, $(DEPS.$(FILE))))): $(patsubst %.g, .objects/%.h, $(FILE)))))
+$(foreach FILE, $(GFILES), $(if $(DEPS.$(FILE)), $(eval $(patsubst %.c, %.o, $(patsubst %.l, %.c, $(patsubst %, .objects/%, $(DEPS.$(FILE))))): $(patsubst %.g, .objects/%.h, $(FILE)))))
 
 .objects/%.o: %.c
 	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
