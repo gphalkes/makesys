@@ -39,6 +39,9 @@ _VERBOSE_LDLT = @echo [LDLT] $@ ;
 _VERBOSE_SILENT = --silent
 _VERBOSE_GEN = @echo [GEN] $@ ;
 _VERBOSE_CXX = @echo [CXX] $< ;
+_VERBOSE_LEX = @echo [LEX] $< ;
+_VERBOSE_LLNEXTGEN = @echo [LLNEXTGEN] $< ;
+_VERBOSE_PRINT = --no-print-directory
 endif
 
 MKPATH:=$(dir $(lastword $(MAKEFILE_LIST)))
@@ -135,12 +138,12 @@ $(foreach FILE, $(GFILES), $(if $(DEPS.$(FILE)), $(eval $(patsubst %.c, %.o, $(p
 .objects/%.c .objects/%.h: %.g
 	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
 	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
-	LLnextgen --base-name=.objects/$* $<
+	$(_VERBOSE_LLNEXTGEN) LLnextgen --base-name=.objects/$* $<
 
 .objects/%.c: %.l
 	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
 	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
-	flex -o $@ $<
+	$(_VERBOSE_LEX) flex -o $@ $<
 
 .objects/%.o: %.cc
 	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
