@@ -28,6 +28,21 @@ ifndef TARGETS
 $(error TARGETS not defined. See $(lastword $(MAKEFILE_LIST)) for details)
 endif
 
+VERSION?=debug
+CC:=gcc
+
+ifdef COVERAGE
+	COVERAGEFLAGS:=-fprofile-arcs -ftest-coverage
+endif
+ifeq ($(VERSION),debug)
+	CFLAGS:=-Wall -W -ggdb -DDEBUG -Wswitch-default \
+		-Wcast-align -Wbad-function-cast \
+		-Wcast-qual -Wwrite-strings -Wstrict-prototypes \
+		$(COVERAGEFLAGS) $(ANSIFLAGS)
+else
+	CFLAGS:=-Wall -W $(ANSIFLAGS) -O2
+endif
+
 .PHONY: all clean
 
 all: $(TARGETS) $(EXTRATARGETS)
