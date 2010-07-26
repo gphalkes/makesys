@@ -32,15 +32,15 @@ endif
 endif
 
 ifndef VERBOSE
-_VERBOSE_CC = @echo [CC] $< ;
-_VERBOSE_CCLT = @echo [CCLT] $< ;
-_VERBOSE_LD = @echo [LD] $@ ;
-_VERBOSE_LDLT = @echo [LDLT] $@ ;
+_VERBOSE_CC = @echo '[CC]' $< ;
+_VERBOSE_CCLT = @echo '[CCLT]' $< ;
+_VERBOSE_LD = @echo '[LD]' $@ ;
+_VERBOSE_LDLT = @echo '[LDLT]' $@ ;
 _VERBOSE_SILENT = --silent
-_VERBOSE_GEN = @echo [GEN] $@ ;
-_VERBOSE_CXX = @echo [CXX] $< ;
-_VERBOSE_LEX = @echo [LEX] $< ;
-_VERBOSE_LLNEXTGEN = @echo [LLNEXTGEN] $< ;
+_VERBOSE_GEN = @echo '[GEN]' $@ ;
+_VERBOSE_CXX = @echo '[CXX]' $< ;
+_VERBOSE_LEX = @echo '[LEX]' $< ;
+_VERBOSE_LLNEXTGEN = @echo '[LLNEXTGEN]' $< ;
 _VERBOSE_PRINT = --no-print-directory
 endif
 
