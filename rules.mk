@@ -69,6 +69,9 @@ else
 	CFLAGS:=-Wall -W $(ANSIFLAGS) -O2 -pipe
 	CXXFLAGS:=-Wall -W $(ANSIFLAGS) -O2 -pipe
 endif
+CFLAGS += -I.
+CXXFLAGS += -I.
+
 GSTLFILTOPTS := -banner:no -width:0
 
 .PHONY: all clean
