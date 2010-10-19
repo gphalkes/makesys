@@ -12,6 +12,8 @@
 # CFILES.<target>  The list of C files for target <target>
 # LFILES.<target>  The list of lex files for target <target>
 # GFILES.<target>  The list of LLnextgen grammar files for target <target>
+# CXXFILES.<target>  The list of C++ files for target <target>
+# GGFILES.<target>  The list of LLnextgen grammar files for target <target> for use with C++
 # LCFILES.<target> The list of C files for _library_ target <target>
 # CFLAGS.<stem>    Flags for the C compiler, used for <stem>.c only
 # LDFLAGS.<target> Flags for the linker, used for <target> only
@@ -83,6 +85,7 @@ GFILES:= $(foreach PART, $(TARGETS) $(CXXTARGETS), $(GFILES.$(PART)))
 LFILES:= $(foreach PART, $(TARGETS) $(CXXTARGETS), $(LFILES.$(PART)))
 LCFILES:= $(foreach PART, $(TARGETS) $(CXXTARGETS), $(LCFILES.$(PART)))
 CXXFILES:= $(foreach PART, $(CXXTARGETS), $(CXXFILES.$(PART)))
+GGFILES:= $(foreach PART, $(CXXTARGETS), $(GGFILES.$(PART)))
 SOURCES:= $(CFILES) $(GFILES) $(LFILES) $(LCFILES) $(CXXFILES)
 
 # force use of our pattern rule for lex files
@@ -92,13 +95,15 @@ OBJECTS:=$(patsubst %.c, .objects/%.o, $(CFILES)) \
 	$(patsubst %.l, .objects/%.o, $(LFILES)) \
 	$(patsubst %.g, .objects/%.o, $(GFILES)) \
 	$(patsubst %.c, .objects/%.lo, $(LCFILES)) \
-	$(patsubst %.cc, .objects/%.o, $(CXXFILES))
+	$(patsubst %.cc, .objects/%.o, $(CXXFILES)) \
+	$(patsubst %.gg, .objects/%.o, $(GFILES))
 $(foreach PART, $(TARGETS) $(CXXTARGETS), $(eval OBJECTS.$(PART):= \
 	$$(patsubst %.c, .objects/%.o, $$(CFILES.$(PART))) \
 	$$(patsubst %.g, .objects/%.o, $$(GFILES.$(PART))) \
 	$$(patsubst %.l, .objects/%.o, $$(LFILES.$(PART))) \
 	$$(patsubst %.c, .objects/%.lo, $$(LCFILES.$(PART))) \
-	$$(patsubst %.cc, .objects/%.o, $$(CXXFILES.$(PART)))))
+	$$(patsubst %.cc, .objects/%.o, $$(CXXFILES.$(PART)) \
+	$$(patsubst %.gg, .objects/%.o, $$(GGFILES.$(PART))))))
 DEPENDENCIES:= $(patsubst %, .deps/%, $(SOURCES))
 
 $(foreach PART, $(filter-out lib%.la, $(TARGETS)), $(eval $(PART): $$(OBJECTS.$(PART)) ; \
@@ -115,6 +120,7 @@ $(foreach PART, $(filter lib%.la, $(TARGETS)), $(eval $(PART): $$(OBJECTS.$(PART
 # Add dependency rules for grammar files. Header files generated from grammar
 # files are needed by the lexical analyser and other files
 $(foreach FILE, $(GFILES), $(if $(DEPS.$(FILE)), $(eval $(patsubst %.c, %.o, $(patsubst %.l, %.c, $(patsubst %, .objects/%, $(DEPS.$(FILE))))): $(patsubst %.g, .objects/%.h, $(FILE)))))
+$(foreach FILE, $(GGFILES), $(if $(DEPS.$(FILE)), $(eval $(patsubst %.cc, %.o, $(patsubst %.l, %.c, $(patsubst %, .objects/%, $(DEPS.$(FILE))))): $(patsubst %.gg, .objects/%.h, $(FILE)))))
 
 .objects/%.o: %.c
 	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
@@ -143,12 +149,22 @@ $(foreach FILE, $(GFILES), $(if $(DEPS.$(FILE)), $(eval $(patsubst %.c, %.o, $(p
 	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
 	$(_VERBOSE_LLNEXTGEN) LLnextgen --base-name=.objects/$* $<
 
+.objects/%.cc .objects/%.h: %.gg
+	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
+	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
+	$(_VERBOSE_LLNEXTGEN) LLnextgen --base-name=.objects/$* --extensions=cc,h $<
+
 .objects/%.c: %.l
 	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
 	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
 	$(_VERBOSE_LEX) flex -o $@ $<
 
 .objects/%.o: %.cc
+	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
+	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
+	$(_VERBOSE_CXX) set -o pipefail ; $(CXX) -MMD -MP -MF .deps/$< $(CXXFLAGS) $(CXXFLAGS.$*) -c $< -o $@ 2>&1 | $(MKPATH)/gSTLFilt.pl $(GSTLFILTOPTS)
+
+.objects/%.o: .objects/%.cc
 	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
 	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
 	$(_VERBOSE_CXX) set -o pipefail ; $(CXX) -MMD -MP -MF .deps/$< $(CXXFLAGS) $(CXXFLAGS.$*) -c $< -o $@ 2>&1 | $(MKPATH)/gSTLFilt.pl $(GSTLFILTOPTS)
