@@ -68,8 +68,8 @@ ifeq ($(VERSION),debug)
 		-Wshadow -Wcast-align -Wcast-qual -Wwrite-strings \
 		$(COVERAGEFLAGS) $(PROFILEFLAGS) -pipe
 else
-	CFLAGS:=-Wall -W $(ANSIFLAGS) -O2 -pipe
-	CXXFLAGS:=-Wall -W $(ANSIFLAGS) -O2 -pipe
+	CFLAGS:=-Wall -W $(ANSIFLAGS) -O2 -pipe $(PROFILEFLAGS)
+	CXXFLAGS:=-Wall -W $(ANSIFLAGS) -O2 -pipe $(PROFILEFLAGS)
 endif
 CFLAGS += -I.
 CXXFLAGS += -I.
@@ -104,7 +104,8 @@ $(foreach PART, $(TARGETS) $(CXXTARGETS), $(eval OBJECTS.$(PART):= \
 	$$(patsubst %.c, .objects/%.lo, $$(LCFILES.$(PART))) \
 	$$(patsubst %.cc, .objects/%.o, $$(CXXFILES.$(PART)) \
 	$$(patsubst %.gg, .objects/%.o, $$(GGFILES.$(PART))))))
-DEPENDENCIES:= $(patsubst %, .deps/%, $(SOURCES))
+DEPENDENCIES:= $(patsubst %, .deps/%, $(SOURCES)) $(patsubst %.g, .deps/.objects/%.c, $(GFILES)) \
+	$(patsubst %.l, .deps/.objects/%.c, $(LFILES)) $(patsubst %.gg, .deps/.objects/%.cc, $(GGFILES))
 
 $(foreach PART, $(filter-out lib%.la, $(TARGETS)), $(eval $(PART): $$(OBJECTS.$(PART)) ; \
 	$$(_VERBOSE_LD) $$(CC) $$(CFLAGS) $$(CFLAGS.$(PART)) $$(LDFLAGS) $$(LDFLAGS.$(PART)) \
@@ -119,8 +120,10 @@ $(foreach PART, $(filter lib%.la, $(TARGETS)), $(eval $(PART): $$(OBJECTS.$(PART
 		-o $$@ $$^ $$(LDLIBS) $$(LDLIBS.$(PART)) -rpath /usr/lib))
 # Add dependency rules for grammar files. Header files generated from grammar
 # files are needed by the lexical analyser and other files
-$(foreach FILE, $(GFILES), $(if $(DEPS.$(FILE)), $(eval $(patsubst %.c, %.o, $(patsubst %.l, %.c, $(patsubst %, .objects/%, $(DEPS.$(FILE))))): $(patsubst %.g, .objects/%.h, $(FILE)))))
-$(foreach FILE, $(GGFILES), $(if $(DEPS.$(FILE)), $(eval $(patsubst %.cc, %.o, $(patsubst %.l, %.c, $(patsubst %, .objects/%, $(DEPS.$(FILE))))): $(patsubst %.gg, .objects/%.h, $(FILE)))))
+$(foreach FILE, $(GFILES), $(if $(DEPS.$(FILE)), $(eval $(patsubst %.c, %.o, $(patsubst %.l, %.c, \
+	$(patsubst %, .objects/%, $(DEPS.$(FILE))))): $(patsubst %.g, .objects/%.h, $(FILE)))))
+$(foreach FILE, $(GGFILES), $(if $(DEPS.$(FILE)), $(eval $(patsubst %.cc, %.o, $(patsubst %.l, %.c, \
+	$(patsubst %, .objects/%, $(DEPS.$(FILE))))): $(patsubst %.gg, .objects/%.h, $(FILE)))))
 
 .objects/%.o: %.c
 	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
