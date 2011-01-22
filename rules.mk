@@ -4,17 +4,13 @@
 #
 # TARGETS          The names of all C targets to be built from sources
 # CXXTARGETS       The names of all C++ targets to be built from sources
+# LTTARGETS        The names of all libtool targets to be built from sources
 # EXTRATARGETS     The names of all targets for which custom rules are used
 # CFLAGS           Flags for the C compiler, used for all compiles
 # LDFLAGS          Flags for the linker, used for all compiles
 # LDLIBS           Libraries to link, used for all compiles
 # LCFLAGS          Flags for the C compiler, only for libtool compiles
-# CFILES.<target>  The list of C files for target <target>
-# LFILES.<target>  The list of lex files for target <target>
-# GFILES.<target>  The list of LLnextgen grammar files for target <target>
-# CXXFILES.<target>  The list of C++ files for target <target>
-# GGFILES.<target>  The list of LLnextgen grammar files for target <target> for use with C++
-# LCFILES.<target> The list of C files for _library_ target <target>
+# SOURCES.<target> The list of source files for the target <target>
 # CFLAGS.<stem>    Flags for the C compiler, used for <stem>.c only
 # LDFLAGS.<target> Flags for the linker, used for <target> only
 # LDLIBS.<target>  Libraries to link, used for <target> only
@@ -29,7 +25,9 @@
 
 ifndef TARGETS
 ifndef CXXTARGETS
-$(error TARGETS nor CXXTARGETS defined. See $(lastword $(MAKEFILE_LIST)) for details)
+ifndef LTTARGETS
+$(error TARGETS, CXXTARGETS or LTTARGETS defined. See $(lastword $(MAKEFILE_LIST)) for details)
+endif
 endif
 endif
 
@@ -78,51 +76,43 @@ GSTLFILTOPTS := -banner:no -width:0
 
 .PHONY: all clean
 
-all: $(TARGETS) $(CXXTARGETS) $(EXTRATARGETS)
+all: $(TARGETS) $(CXXTARGETS) $(LTTARGETS) $(EXTRATARGETS)
 
-CFILES:= $(foreach PART, $(TARGETS) $(CXXTARGETS), $(CFILES.$(PART)))
-GFILES:= $(foreach PART, $(TARGETS) $(CXXTARGETS), $(GFILES.$(PART)))
-LFILES:= $(foreach PART, $(TARGETS) $(CXXTARGETS), $(LFILES.$(PART)))
-LCFILES:= $(foreach PART, $(TARGETS) $(CXXTARGETS), $(LCFILES.$(PART)))
-CXXFILES:= $(foreach PART, $(CXXTARGETS), $(CXXFILES.$(PART)))
-GGFILES:= $(foreach PART, $(CXXTARGETS), $(GGFILES.$(PART)))
-SOURCES:= $(CFILES) $(GFILES) $(LFILES) $(LCFILES) $(CXXFILES)
+STDSOURCES:= $(foreach PART, $(TARGETS) $(CXXTARGETS), $(SOURCES.$(PART)))
+LTSOURCES:= $(foreach PART, $(LTTARGETS), $(SOURCES.$(PART)))
+SOURCES:= $(foreach PART, $(TARGETS) $(CXXTARGETS) $(LTTARGETS), $(SOURCES.$(PART)))
+
 
 # force use of our pattern rule for lex files
 $(foreach FILE, $(LFILES), $(eval $(patsubst %.l, .objects/%.o, $(FILE)): $(patsubst %.l, .objects/%.c,$(FILE))))
 
-OBJECTS:=$(patsubst %.c, .objects/%.o, $(CFILES)) \
-	$(patsubst %.l, .objects/%.o, $(LFILES)) \
-	$(patsubst %.g, .objects/%.o, $(GFILES)) \
-	$(patsubst %.c, .objects/%.lo, $(LCFILES)) \
-	$(patsubst %.cc, .objects/%.o, $(CXXFILES)) \
-	$(patsubst %.gg, .objects/%.o, $(GFILES))
-$(foreach PART, $(TARGETS) $(CXXTARGETS), $(eval OBJECTS.$(PART):= \
-	$$(patsubst %.c, .objects/%.o, $$(CFILES.$(PART))) \
-	$$(patsubst %.g, .objects/%.o, $$(GFILES.$(PART))) \
-	$$(patsubst %.l, .objects/%.o, $$(LFILES.$(PART))) \
-	$$(patsubst %.c, .objects/%.lo, $$(LCFILES.$(PART))) \
-	$$(patsubst %.cc, .objects/%.o, $$(CXXFILES.$(PART)) \
-	$$(patsubst %.gg, .objects/%.o, $$(GGFILES.$(PART))))))
-DEPENDENCIES:= $(patsubst %, .deps/%, $(SOURCES)) $(patsubst %.g, .deps/.objects/%.c, $(GFILES)) \
-	$(patsubst %.l, .deps/.objects/%.c, $(LFILES)) $(patsubst %.gg, .deps/.objects/%.cc, $(GGFILES))
+OBJECTS:=$(foreach EXT, .c .l .g .cc .gg, $(patsubst %$(EXT), .objects/%.o, $(filter %$(EXT), $(STDSOURCES)))) \
+	$(foreach EXT, .c .l .g .cc .gg, $(patsubst %$(EXT), .objects/%.lo, $(filter %$(EXT), $(LTSOURCES))))
 
-$(foreach PART, $(filter-out lib%.la, $(TARGETS)), $(eval $(PART): $$(OBJECTS.$(PART)) ; \
+$(foreach PART, $(TARGETS) $(CXXTARGETS), $(eval OBJECTS.$(PART):= \
+	$$(foreach EXT, .c .l .g .cc .gg, $$(patsubst %$$(EXT), .objects/%.o, $$(filter %$$(EXT), $$(SOURCES.$$(PART)))))))
+$(foreach PART, $(LTTARGETS), $(eval OBJECTS.$(PART):= \
+	$$(foreach EXT, .c .l .g .cc .gg, $$(patsubst %$$(EXT), .objects/%.lo, $$(filter %$$(EXT), $$(SOURCES.$$(PART)))))))
+
+DEPENDENCIES:= $(patsubst %, .deps/%, $(SOURCES)) $(patsubst %.g, .deps/.objects/%.c, $(filter %.g, $(SOURCES))) \
+	$(patsubst %.l, .deps/.objects/%.c, $(LFILES)) $(patsubst %.gg, .deps/.objects/%.cc, $(filter %.gg, $(SOURCES)))
+
+$(foreach PART, $(TARGETS), $(eval $(PART): $$(OBJECTS.$(PART)) ; \
 	$$(_VERBOSE_LD) $$(CC) $$(CFLAGS) $$(CFLAGS.$(PART)) $$(LDFLAGS) $$(LDFLAGS.$(PART)) \
 		-o $$@ $$^ $$(LDLIBS) $$(LDLIBS.$(PART))))
 
-$(foreach PART, $(filter-out lib%.la, $(CXXTARGETS)), $(eval $(PART): $$(OBJECTS.$(PART)) ; \
+$(foreach PART, $(CXXTARGETS), $(eval $(PART): $$(OBJECTS.$(PART)) ; \
 	$$(_VERBOSE_LD) $$(CXX) $$(CXXFLAGS) $$(CXXFLAGS.$(PART)) $$(LDFLAGS) $$(LDFLAGS.$(PART)) \
 		-o $$@ $$^ $$(LDLIBS) $$(LDLIBS.$(PART))))
 
-$(foreach PART, $(filter lib%.la, $(TARGETS)), $(eval $(PART): $$(OBJECTS.$(PART)) ; \
+$(foreach PART, $(LTTARGETS), $(eval $(PART): $$(OBJECTS.$(PART)) ; \
 	$$(_VERBOSE_LDLT) libtool $(_VERBOSE_SILENT) --mode=link $$(CC) $$(CFLAGS) $$(CFLAGS.$(PART)) $$(LDFLAGS) $$(LDFLAGS.$(PART)) \
 		-o $$@ $$^ $$(LDLIBS) $$(LDLIBS.$(PART)) -rpath /usr/lib))
 # Add dependency rules for grammar files. Header files generated from grammar
 # files are needed by the lexical analyser and other files
-$(foreach FILE, $(GFILES), $(if $(DEPS.$(FILE)), $(eval $(patsubst %.c, %.o, $(patsubst %.l, %.c, \
+$(foreach FILE, $(filter %.g, $(SOURCES)), $(if $(DEPS.$(FILE)), $(eval $(patsubst %.c, %.o, $(patsubst %.l, %.c, \
 	$(patsubst %, .objects/%, $(DEPS.$(FILE))))): $(patsubst %.g, .objects/%.h, $(FILE)))))
-$(foreach FILE, $(GGFILES), $(if $(DEPS.$(FILE)), $(eval $(patsubst %.cc, %.o, $(patsubst %.l, %.c, \
+$(foreach FILE, $(filter %.gg, $(SOURCES)), $(if $(DEPS.$(FILE)), $(eval $(patsubst %.cc, %.o, $(patsubst %.l, %.c, \
 	$(patsubst %, .objects/%, $(DEPS.$(FILE))))): $(patsubst %.gg, .objects/%.h, $(FILE)))))
 
 .objects/%.o: %.c
@@ -173,6 +163,6 @@ $(foreach FILE, $(GGFILES), $(if $(DEPS.$(FILE)), $(eval $(patsubst %.cc, %.o, $
 	$(_VERBOSE_CXX) set -o pipefail ; $(CXX) -MMD -MP -MF .deps/$< $(CXXFLAGS) $(CXXFLAGS.$*) -c $< -o $@ 2>&1 | $(MKPATH)/gSTLFilt.pl $(GSTLFILTOPTS)
 
 clean::
-	rm -rf $(TARGETS) $(CXXTARGETS) .deps .objects .libs >/dev/null 2>&1
+	rm -rf $(TARGETS) $(CXXTARGETS) $(LTTARGETS) .deps .objects .libs >/dev/null 2>&1
 
 -include $(DEPENDENCIES)
