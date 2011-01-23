@@ -134,7 +134,7 @@ $(foreach FILE, $(filter %.gg, $(SOURCES)), $(if $(DEPS.$(FILE)), $(eval $(patsu
 .objects/%.lo: .objects/%.c
 	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
 	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
-	$(_VERBOSE_CCLT) libtool --mode=compile $(CC) -MMD -MP -MF .deps/$< $(CFLAGS) $(CFLAGS.$*) $(LCFLAGS) -c $< -o $@
+	$(_VERBOSE_CCLT) libtool $(_VERBOSE_SILENT) --mode=compile $(CC) -MMD -MP -MF .deps/$< $(CFLAGS) $(CFLAGS.$*) $(LCFLAGS) -c $< -o $@
 	@sed -i -r 's/\.o\>/\.lo/g' .deps/$<
 
 .objects/%.c .objects/%.h: %.g
@@ -161,6 +161,11 @@ $(foreach FILE, $(filter %.gg, $(SOURCES)), $(if $(DEPS.$(FILE)), $(eval $(patsu
 	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
 	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
 	$(_VERBOSE_CXX) set -o pipefail ; $(CXX) -MMD -MP -MF .deps/$< $(CXXFLAGS) $(CXXFLAGS.$*) -c $< -o $@ 2>&1 | $(MKPATH)/gSTLFilt.pl $(GSTLFILTOPTS)
+
+# Block the implicit rule for lex files
+%.c: %.l
+
+.SECONDARY: $(patsubst %.l, .objects/%.c, $(filter %.l, $(SOURCES)))
 
 clean::
 	rm -rf $(TARGETS) $(CXXTARGETS) $(LTTARGETS) .deps .objects .libs >/dev/null 2>&1
