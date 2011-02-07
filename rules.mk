@@ -12,6 +12,7 @@
 # LCFLAGS          Flags for the C compiler, only for libtool compiles
 # SOURCES.<target> The list of source files for the target <target>
 # CFLAGS.<stem>    Flags for the C compiler, used for <stem>.c only
+# CXXFLAGS.<stem>  Flags for the C++ compiler, used for <stem>.cc only
 # LDFLAGS.<target> Flags for the linker, used for <target> only
 # LDLIBS.<target>  Libraries to link, used for <target> only
 #
@@ -58,7 +59,7 @@ ifdef PROFILE
 	PROFILEFLAGS:=-pg
 endif
 ifeq ($(VERSION),debug)
-	CFLAGS:=-Wall -W -ggdb -DDEBUG -Wswitch-default \
+	CFLAGS:=-Wall -Wextra -ggdb -DDEBUG -Wswitch-default \
 		-Wcast-align -Wbad-function-cast \
 		-Wcast-qual -Wwrite-strings -Wstrict-prototypes \
 		$(COVERAGEFLAGS) $(PROFILEFLAGS) $(ANSIFLAGS) -pipe
@@ -66,13 +67,28 @@ ifeq ($(VERSION),debug)
 		-Wshadow -Wcast-align -Wcast-qual -Wwrite-strings \
 		$(COVERAGEFLAGS) $(PROFILEFLAGS) -pipe
 else
-	CFLAGS:=-Wall -W $(ANSIFLAGS) -O2 -pipe $(PROFILEFLAGS)
-	CXXFLAGS:=-Wall -W $(ANSIFLAGS) -O2 -pipe $(PROFILEFLAGS)
+	CFLAGS:=-Wall -Wextra $(ANSIFLAGS) -O2 -pipe $(PROFILEFLAGS)
+	CXXFLAGS:=-Wall -Wextra $(ANSIFLAGS) -O2 -pipe $(PROFILEFLAGS)
 endif
 CFLAGS += -I.
 CXXFLAGS += -I.
 
-GSTLFILTOPTS := -banner:no -width:0
+# Compiler specific settings. G++ requires output filtering, and Clang can do without
+# the caret stuff (switched on by VERBOSE)
+ifeq ($(CXX),gcc)
+	GSTLFILTOPTS := -banner:no -width:0
+	GSTLFILT := 2>&1 | $(MKPATH)/gSTLFilt.pl $(GSTLFILTOPTS)
+else
+	GSTLFILT :=
+endif
+ifndef VERBOSE
+	ifeq ($(CC),clang)
+		CFLAGS += -fno-caret-diagnostics
+	endif
+	ifeq ($(CXX),clang++)
+		CXXFLAGS += -fno-caret-diagnostics
+	endif
+endif
 
 .PHONY: all clean
 
@@ -106,7 +122,7 @@ $(foreach PART, $(CXXTARGETS), $(eval $(PART): $$(OBJECTS.$(PART)) ; \
 		-o $$@ $$^ $$(LDLIBS) $$(LDLIBS.$(PART))))
 
 $(foreach PART, $(LTTARGETS), $(eval $(PART): $$(OBJECTS.$(PART)) ; \
-	$$(_VERBOSE_LDLT) libtool $(_VERBOSE_SILENT) --mode=link $$(CC) $$(CFLAGS) $$(CFLAGS.$(PART)) $$(LDFLAGS) $$(LDFLAGS.$(PART)) \
+	$$(_VERBOSE_LDLT) libtool $(_VERBOSE_SILENT) --mode=link --tag=CC $$(CC) $$(CFLAGS) $$(CFLAGS.$(PART)) $$(LDFLAGS) $$(LDFLAGS.$(PART)) \
 		-o $$@ $$^ $$(LDLIBS) $$(LDLIBS.$(PART)) -rpath /usr/lib))
 # Add dependency rules for grammar files. Header files generated from grammar
 # files are needed by the lexical analyser and other files
@@ -128,13 +144,13 @@ $(foreach FILE, $(filter %.gg, $(SOURCES)), $(if $(DEPS.$(FILE)), $(eval $(patsu
 .objects/%.lo: %.c
 	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
 	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
-	$(_VERBOSE_CCLT) libtool $(_VERBOSE_SILENT) --mode=compile $(CC) -MMD -MP -MF .deps/$< $(CFLAGS) $(CFLAGS.$*) $(LCFLAGS) -c $< -o $@
+	$(_VERBOSE_CCLT) libtool $(_VERBOSE_SILENT) --mode=compile --tag=CC $(CC) -MMD -MP -MF .deps/$< $(CFLAGS) $(CFLAGS.$*) $(LCFLAGS) -c $< -o $@
 	@sed -i -r 's/\.o\>/\.lo/g' .deps/$<
 
 .objects/%.lo: .objects/%.c
 	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
 	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
-	$(_VERBOSE_CCLT) libtool $(_VERBOSE_SILENT) --mode=compile $(CC) -MMD -MP -MF .deps/$< $(CFLAGS) $(CFLAGS.$*) $(LCFLAGS) -c $< -o $@
+	$(_VERBOSE_CCLT) libtool $(_VERBOSE_SILENT) --mode=compile --tag=CC $(CC) -MMD -MP -MF .deps/$< $(CFLAGS) $(CFLAGS.$*) $(LCFLAGS) -c $< -o $@
 	@sed -i -r 's/\.o\>/\.lo/g' .deps/$<
 
 .objects/%.c .objects/%.h: %.g
@@ -155,12 +171,12 @@ $(foreach FILE, $(filter %.gg, $(SOURCES)), $(if $(DEPS.$(FILE)), $(eval $(patsu
 .objects/%.o: %.cc
 	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
 	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
-	$(_VERBOSE_CXX) set -o pipefail ; $(CXX) -MMD -MP -MF .deps/$< $(CXXFLAGS) $(CXXFLAGS.$*) -c $< -o $@ 2>&1 | $(MKPATH)/gSTLFilt.pl $(GSTLFILTOPTS)
+	$(_VERBOSE_CXX) set -o pipefail ; $(CXX) -MMD -MP -MF .deps/$< $(CXXFLAGS) $(CXXFLAGS.$*) -c $< -o $@ $(GSTLFILT)
 
 .objects/%.o: .objects/%.cc
 	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
 	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
-	$(_VERBOSE_CXX) set -o pipefail ; $(CXX) -MMD -MP -MF .deps/$< $(CXXFLAGS) $(CXXFLAGS.$*) -c $< -o $@ 2>&1 | $(MKPATH)/gSTLFilt.pl $(GSTLFILTOPTS)
+	$(_VERBOSE_CXX) set -o pipefail ; $(CXX) -MMD -MP -MF .deps/$< $(CXXFLAGS) $(CXXFLAGS.$*) -c $< -o $@ $(GSTLFILT)
 
 # Block the implicit rule for lex files
 %.c: %.l
