@@ -58,7 +58,7 @@ MKPATH:=$(dir $(lastword $(MAKEFILE_LIST)))
 VERSION ?= debug
 CC ?= gcc
 CXX ?= g++
-SHELL ?= /bin/bash
+SHELL := /bin/bash
 
 ifdef COVERAGE
 	COVERAGEFLAGS := -fprofile-arcs -ftest-coverage
