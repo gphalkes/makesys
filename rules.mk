@@ -30,14 +30,8 @@
 # - Extra dependencies can be defined after inclusion of this file. If only
 #   the order is important, use an order only dependency: "test: | libX.la"
 
-ifndef TARGETS
-ifndef CXXTARGETS
-ifndef LTTARGETS
-ifndef CXXLTTARGETS
-$(error TARGETS, CXXTARGETS, LTTARGETS or CXXLTTARGETS defined. See $(lastword $(MAKEFILE_LIST)) for details)
-endif
-endif
-endif
+ifeq ($(strip $(TARGETS) $(CXXTARGETS) $(LTTARGETS) $(CXXLTTARGETS)),)
+$(error No TARGETS, CXXTARGETS, LTTARGETS or CXXLTTARGETS defined. See $(lastword $(MAKEFILE_LIST)) for details)
 endif
 
 ifndef VERBOSE
