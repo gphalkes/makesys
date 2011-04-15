@@ -153,25 +153,25 @@ $(foreach FILE, $(filter %.gg, $(SOURCES)), $(if $(DEPS.$(FILE)), $(eval $(patsu
 	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
 	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
 	$(_VERBOSE_CCLT) libtool $(_VERBOSE_SILENT) --mode=compile --tag=CC $(CC) -shared -MMD -MP -MF .deps/$< $(CFLAGS) $(CFLAGS.$*) $(LCFLAGS) -c $< -o $@
-	@sed -i -r 's/\.o\>/\.lo/g' .deps/$<
+	@sed -i -r 's/(\.libs\/)?([^/]+)\.o\>/\2\.lo/g' .deps/$<
 
 .objects/%.lo: .objects/%.c
 	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
 	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
 	$(_VERBOSE_CCLT) libtool $(_VERBOSE_SILENT) --mode=compile --tag=CC $(CC) -shared -MMD -MP -MF .deps/$< $(CFLAGS) $(CFLAGS.$*) $(LCFLAGS) -c $< -o $@
-	@sed -i -r 's/\.o\>/\.lo/g' .deps/$<
+	@sed -i -r 's/(\.libs\/)?([^/]+)\.o\>/\2\.lo/g' .deps/$<
 
 .objects/%.lo: %.cc
 	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
 	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
 	$(_VERBOSE_CCLT) libtool $(_VERBOSE_SILENT) --mode=compile --tag=CXX $(CXX) -shared -MMD -MP -MF .deps/$< $(CXXFLAGS) $(CXXFLAGS.$*) $(LCXXFLAGS) -c $< -o $@
-	@sed -i -r 's/\.o\>/\.lo/g' .deps/$<
+	@sed -i -r 's/(\.libs\/)?([^/]+)\.o\>/\2\.lo/g' .deps/$<
 
 .objects/%.lo: .objects/%.cc
 	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
 	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
 	$(_VERBOSE_CCLT) libtool $(_VERBOSE_SILENT) --mode=compile --tag=CXX $(CXX) -shared -MMD -MP -MF .deps/$< $(CXXFLAGS) $(CXXFLAGS.$*) $(LCXXFLAGS) -c $< -o $@
-	@sed -i -r 's/\.o\>/\.lo/g' .deps/$<
+	@sed -i -r 's/(\.libs\/)?([^/]+)\.o\>/\2\.lo/g' .deps/$<
 
 .objects/%.c .objects/%.h: %.g
 	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
