@@ -50,14 +50,21 @@ endif
 MKPATH:=$(dir $(lastword $(MAKEFILE_LIST)))
 
 VERSION ?= debug
-CC ?= gcc
-CXX ?= g++
+ifeq ($(COMPILER),gcc)
+CC := gcc
+CXX := g++
+else
+CC := clang
+CXX := clang++
+endif
 SHELL := /bin/bash
 
 ifdef COVERAGE
 	COVERAGEFLAGS := -fprofile-arcs -ftest-coverage
 endif
 ifdef PROFILE
+	CC := gcc
+	CXX := g++
 	PROFILEFLAGS := -pg
 endif
 ifeq ($(VERSION),debug)
