@@ -42,6 +42,7 @@ _VERBOSE_LDLT = @echo '[LDLT]' $@ ;
 _VERBOSE_SILENT = --silent
 _VERBOSE_GEN = @echo '[GEN]' $@ ;
 _VERBOSE_CXX = @echo '[CXX]' $< ;
+_VERBOSE_CXXLT = @echo '[CXXLT]' $< ;
 _VERBOSE_LEX = @echo '[LEX]' $< ;
 _VERBOSE_LLNEXTGEN = @echo '[LLNEXTGEN]' $< ;
 _VERBOSE_PRINT = --no-print-directory
@@ -171,13 +172,13 @@ $(foreach FILE, $(filter %.gg, $(SOURCES)), $(if $(DEPS.$(FILE)), $(eval $(patsu
 .objects/%.lo: %.cc
 	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
 	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
-	$(_VERBOSE_CCLT) libtool $(_VERBOSE_SILENT) --mode=compile --tag=CXX $(CXX) -shared -MMD -MP -MF .deps/$< $(CXXFLAGS) $(CXXFLAGS.$*) $(LCXXFLAGS) -c $< -o $@
+	$(_VERBOSE_CXXLT) libtool $(_VERBOSE_SILENT) --mode=compile --tag=CXX $(CXX) -shared -MMD -MP -MF .deps/$< $(CXXFLAGS) $(CXXFLAGS.$*) $(LCXXFLAGS) -c $< -o $@
 	@sed -i -r 's/(\.libs\/)?([^/]+)\.o\>/\2\.lo/g' .deps/$<
 
 .objects/%.lo: .objects/%.cc
 	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
 	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
-	$(_VERBOSE_CCLT) libtool $(_VERBOSE_SILENT) --mode=compile --tag=CXX $(CXX) -shared -MMD -MP -MF .deps/$< $(CXXFLAGS) $(CXXFLAGS.$*) $(LCXXFLAGS) -c $< -o $@
+	$(_VERBOSE_CXXLT) libtool $(_VERBOSE_SILENT) --mode=compile --tag=CXX $(CXX) -shared -MMD -MP -MF .deps/$< $(CXXFLAGS) $(CXXFLAGS.$*) $(LCXXFLAGS) -c $< -o $@
 	@sed -i -r 's/(\.libs\/)?([^/]+)\.o\>/\2\.lo/g' .deps/$<
 
 .objects/%.c .objects/%.h: %.g
