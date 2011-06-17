@@ -21,6 +21,7 @@
 # CXXFLAGS.<stem>  Flags for the C++ compiler, used for <stem>.cc only
 # LDFLAGS.<target> Flags for the linker, used for <target> only
 # LDLIBS.<target>  Libraries to link, used for <target> only
+# FLFLAGS          Flags for flex
 # EXTRATARGETS     The names of all targets for which custom rules are used
 #
 # Notes:
@@ -50,7 +51,7 @@ endif
 
 MKPATH:=$(dir $(lastword $(MAKEFILE_LIST)))
 
-VERSION ?= debug
+BUILDVERSION ?= debug
 ifeq ($(COMPILER),gcc)
 CC := gcc
 CXX := g++
@@ -68,7 +69,7 @@ ifdef PROFILE
 	CXX := g++
 	PROFILEFLAGS := -pg
 endif
-ifeq ($(VERSION),debug)
+ifeq ($(BUILDVERSION),debug)
 	CFLAGS := -Wall -Wextra -ggdb -DDEBUG -Wswitch-default \
 		-Wcast-align -Wbad-function-cast \
 		-Wcast-qual -Wwrite-strings -Wstrict-prototypes \
@@ -194,7 +195,7 @@ $(foreach FILE, $(filter %.gg, $(SOURCES)), $(if $(DEPS.$(FILE)), $(eval $(patsu
 .objects/%.c: %.l
 	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
 	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
-	$(_VERBOSE_LEX) flex -o $@ $<
+	$(_VERBOSE_LEX) flex $(FLFLAGS) -o $@ $<
 
 .objects/%.o: %.cc
 	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
