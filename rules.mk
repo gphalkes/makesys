@@ -104,7 +104,12 @@ endif
 
 .PHONY: all clean
 
+ifneq ($(filter clean, $(MAKECMDGOALS)),)
+all: clean
+	@$(MAKE) --no-print-directory $(filter-out clean, $(MAKECMDGOALS))
+else
 all: $(TARGETS) $(CXXTARGETS) $(LTTARGETS) $(CXXLTTARGETS) $(EXTRATARGETS)
+endif
 
 STDSOURCES:= $(foreach PART, $(TARGETS) $(CXXTARGETS), $(SOURCES.$(PART)))
 LTSOURCES:= $(foreach PART, $(LTTARGETS) $(CXXLTTARGETS), $(SOURCES.$(PART)))
