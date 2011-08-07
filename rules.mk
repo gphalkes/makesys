@@ -47,6 +47,7 @@ _VERBOSE_CXXLT = @echo '[CXXLT]' $< ;
 _VERBOSE_LEX = @echo '[LEX]' $< ;
 _VERBOSE_LLNEXTGEN = @echo '[LLNEXTGEN]' $< ;
 _VERBOSE_PRINT = --no-print-directory
+_VERBOSE_GEN = @echo '[GEN]' $< ;
 endif
 
 MKPATH:=$(dir $(lastword $(MAKEFILE_LIST)))
