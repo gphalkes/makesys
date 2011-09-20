@@ -50,6 +50,10 @@ _VERBOSE_PRINT = --no-print-directory
 _VERBOSE_GEN = @echo '[GEN]' $< ;
 endif
 
+_GENDIR = @ [ -d $(1)/`dirname '$(2)'` ] || mkdir -p $(1)/`dirname '$(2)'`
+GENOBJDIR = $(call _GENDIR,.objects,$<)
+GENDEPDIR = $(call _GENDIR,.deps,$<)
+
 MKPATH:=$(dir $(lastword $(MAKEFILE_LIST)))
 
 BUILDVERSION ?= debug
@@ -155,62 +159,62 @@ $(foreach FILE, $(filter %.gg, $(SOURCES)), $(if $(DEPS.$(FILE)), $(eval $(patsu
 	$(patsubst %, .objects/%, $(DEPS.$(FILE))))): $(patsubst %.gg, .objects/%.h, $(FILE)))))
 
 .objects/%.o: %.c
-	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
-	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
+	$(GENDEPDIR)
+	$(GENOBJDIR)
 	$(_VERBOSE_CC) $(CC) -MMD -MP -MF .deps/$< $(CFLAGS) $(CFLAGS.$*) -c $< -o $@
 
 .objects/%.o: .objects/%.c
-	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
-	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
+	$(GENDEPDIR)
+	$(GENOBJDIR)
 	$(_VERBOSE_CC) $(CC) -MMD -MP -MF .deps/$< $(CFLAGS) $(CFLAGS.$*) -c $< -o $@
 
 .objects/%.lo: %.c
-	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
-	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
+	$(GENDEPDIR)
+	$(GENOBJDIR)
 	$(_VERBOSE_CCLT) libtool $(_VERBOSE_SILENT) --mode=compile --tag=CC $(CC) -shared -MMD -MP -MF .deps/$< $(CFLAGS) $(CFLAGS.$*) $(LCFLAGS) -c $< -o $@
 	@sed -i -r 's/(\.libs\/)?([^/]+)\.o\>/\2\.lo/g' .deps/$<
 
 .objects/%.lo: .objects/%.c
-	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
-	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
+	$(GENDEPDIR)
+	$(GENOBJDIR)
 	$(_VERBOSE_CCLT) libtool $(_VERBOSE_SILENT) --mode=compile --tag=CC $(CC) -shared -MMD -MP -MF .deps/$< $(CFLAGS) $(CFLAGS.$*) $(LCFLAGS) -c $< -o $@
 	@sed -i -r 's/(\.libs\/)?([^/]+)\.o\>/\2\.lo/g' .deps/$<
 
 .objects/%.lo: %.cc
-	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
-	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
+	$(GENDEPDIR)
+	$(GENOBJDIR)
 	$(_VERBOSE_CXXLT) libtool $(_VERBOSE_SILENT) --mode=compile --tag=CXX $(CXX) -shared -MMD -MP -MF .deps/$< $(CXXFLAGS) $(CXXFLAGS.$*) $(LCXXFLAGS) -c $< -o $@
 	@sed -i -r 's/(\.libs\/)?([^/]+)\.o\>/\2\.lo/g' .deps/$<
 
 .objects/%.lo: .objects/%.cc
-	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
-	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
+	$(GENDEPDIR)
+	$(GENOBJDIR)
 	$(_VERBOSE_CXXLT) libtool $(_VERBOSE_SILENT) --mode=compile --tag=CXX $(CXX) -shared -MMD -MP -MF .deps/$< $(CXXFLAGS) $(CXXFLAGS.$*) $(LCXXFLAGS) -c $< -o $@
 	@sed -i -r 's/(\.libs\/)?([^/]+)\.o\>/\2\.lo/g' .deps/$<
 
 .objects/%.c .objects/%.h: %.g
-	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
-	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
+	$(GENDEPDIR)
+	$(GENOBJDIR)
 	$(_VERBOSE_LLNEXTGEN) LLnextgen --base-name=.objects/$* $<
 
 .objects/%.cc .objects/%.h: %.gg
-	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
-	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
+	$(GENDEPDIR)
+	$(GENOBJDIR)
 	$(_VERBOSE_LLNEXTGEN) LLnextgen --base-name=.objects/$* --extensions=cc,h $<
 
 .objects/%.c: %.l
-	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
-	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
+	$(GENDEPDIR)
+	$(GENOBJDIR)
 	$(_VERBOSE_LEX) flex $(FLFLAGS) -o $@ $<
 
 .objects/%.o: %.cc
-	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
-	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
+	$(GENDEPDIR)
+	$(GENOBJDIR)
 	$(_VERBOSE_CXX) set -o pipefail ; $(CXX) -MMD -MP -MF .deps/$< $(CXXFLAGS) $(CXXFLAGS.$*) -c $< -o $@ $(GSTLFILT)
 
 .objects/%.o: .objects/%.cc
-	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
-	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
+	$(GENDEPDIR)
+	$(GENOBJDIR)
 	$(_VERBOSE_CXX) set -o pipefail ; $(CXX) -MMD -MP -MF .deps/$< $(CXXFLAGS) $(CXXFLAGS.$*) -c $< -o $@ $(GSTLFILT)
 
 # Block the implicit rule for lex files
