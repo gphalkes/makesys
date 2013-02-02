@@ -1,0 +1,4 @@
+This repository contains a Makefile rules file which is intended to make it
+easy to have a make based project with automatic dependencies. See the header
+of the rules.mk file for documentation.
+
