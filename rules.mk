@@ -53,6 +53,10 @@
 #   defines the "all" rule which should be the first rule in the Makefile
 # - Extra dependencies can be defined after inclusion of this file. If only
 #   the order is important, use an order only dependency: "test: | libX.la"
+# Use the L macro to refer to non-system library paths. This will ensure that
+# both a -L option and a -Wl,-rpath are supplied. Only relative directories
+# are supported. Multiple directories can be specified in a single call. E.g.:
+# LDFLAGS = $(call L, ../src/.libs ../../libfoo/src/.libs)
 
 ifeq ($(strip $(TARGETS) $(CXXTARGETS) $(LTTARGETS) $(CXXLTTARGETS)),)
 $(error No TARGETS, CXXTARGETS, LTTARGETS or CXXLTTARGETS defined. See $(lastword $(MAKEFILE_LIST)) for details)
@@ -77,7 +81,8 @@ _GENDIR = @ [ -d $(1)/`dirname '$(2)'` ] || mkdir -p $(1)/`dirname '$(2)'`
 GENOBJDIR = $(call _GENDIR,.objects,$<)
 GENDEPDIR = $(call _GENDIR,.deps,$<)
 
-MKPATH:=$(dir $(lastword $(MAKEFILE_LIST)))
+MKPATH := $(dir $(lastword $(MAKEFILE_LIST)))
+L = $(foreach d,$(1),-L$(d) -Wl,-rpath=$(CURDIR)/$(d))
 
 BUILDVERSION ?= debug
 ifeq ($(COMPILER),gcc)
