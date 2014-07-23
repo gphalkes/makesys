@@ -89,8 +89,10 @@ ifeq ($(COMPILER),gcc)
 CC := gcc
 CXX := g++
 else
+ifneq ($(COMPILER),external)
 CC := clang
 CXX := clang++
+endif
 endif
 SHELL := /bin/bash
 
@@ -144,9 +146,9 @@ else
 all: $(TARGETS) $(CXXTARGETS) $(LTTARGETS) $(CXXLTTARGETS) $(EXTRATARGETS)
 endif
 
-STDSOURCES:= $(foreach PART, $(TARGETS) $(CXXTARGETS), $(SOURCES.$(PART)))
-LTSOURCES:= $(foreach PART, $(LTTARGETS) $(CXXLTTARGETS), $(SOURCES.$(PART)))
-SOURCES:= $(foreach PART, $(TARGETS) $(CXXTARGETS) $(LTTARGETS) $(CXXLTTARGETS), $(SOURCES.$(PART)))
+STDSOURCES := $(foreach PART, $(TARGETS) $(CXXTARGETS), $(SOURCES.$(PART)))
+LTSOURCES := $(foreach PART, $(LTTARGETS) $(CXXLTTARGETS), $(SOURCES.$(PART)))
+SOURCES := $(foreach PART, $(TARGETS) $(CXXTARGETS) $(LTTARGETS) $(CXXLTTARGETS), $(SOURCES.$(PART)))
 
 
 # force use of our pattern rule for lex files
@@ -178,6 +180,19 @@ $(foreach PART, $(LTTARGETS), $(eval $(PART): $$(OBJECTS.$(PART)) ; \
 $(foreach PART, $(CXXLTTARGETS), $(eval $(PART): $$(OBJECTS.$(PART)) ; \
 	$$(_VERBOSE_LDLT) libtool $(_VERBOSE_SILENT) --mode=link --tag=CXX $$(CXX) -shared $$(CXXFLAGS) $$(CXXFLAGS.$(PART)) $$(LDFLAGS) $$(LDFLAGS.$(PART)) \
 		-o $$@ $$^ $$(LDLIBS) $$(LDLIBS.$(PART)) -rpath /usr/lib))
+
+#FIXME: these rules have to be extended for the C/C++ files that are generated from .l, .g and .gg files
+$(foreach PART, $(CTARGETS), $(foreach FILE, $(filter %.c, $(SOURCES.$(PART))), \
+	$(eval CFLAGS.$(patsubst %.c,%, $(FILE)) += $$(CFLAGS.$(PART)))))
+
+$(foreach PART, $(LTTARGETS), $(foreach FILE, $(filter %.c, $(SOURCES.$(PART))), \
+	$(eval CFLAGS.$(patsubst %.c,%, $(FILE)) += $$(CFLAGS.$(PART)))))
+
+$(foreach PART, $(CXXTARGETS), $(foreach FILE, $(filter %.cc, $(SOURCES.$(PART))), \
+	$(eval CXXFLAGS.$(patsubst %.cc,%, $(FILE)) += $$(CXXFLAGS.$(PART)))))
+
+$(foreach PART, $(CXXLTTARGETS), $(foreach FILE, $(filter %.cc, $(SOURCES.$(PART))), \
+	$(eval CXXFLAGS.$(patsubst %.cc,%, $(FILE)) += $$(CXXFLAGS.$(PART)))))
 
 # Add dependency rules for grammar files. Header files generated from grammar
 # files are needed by the lexical analyser and other files
