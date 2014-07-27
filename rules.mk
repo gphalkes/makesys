@@ -116,22 +116,28 @@ ifdef PROFILE
 	CXX := g++
 	PROFILEFLAGS := -pg
 endif
+ifdef ASAN
+	ASANFLAGS := -fsanitize=address -fno-omit-frame-pointer
+endif
 ifeq ($(BUILDVERSION),debug)
 	CFLAGS := -Wall -Wextra -ggdb -DDEBUG -Wswitch-default \
 		-Wcast-align -Wbad-function-cast \
 		-Wcast-qual -Wwrite-strings -Wstrict-prototypes \
-		$(COVERAGEFLAGS) $(PROFILEFLAGS) $(ANSIFLAGS) -pipe
+		$(COVERAGEFLAGS) $(PROFILEFLAGS) $(ANSIFLAGS) -pipe \
+		$(ASANFLAGS)
 	CXXFLAGS := -Wall -W -ggdb -DDEBUG -Wswitch-default \
 		-Wshadow -Wcast-align -Wcast-qual -Wwrite-strings \
-		$(COVERAGEFLAGS) $(PROFILEFLAGS) -pipe
+		$(COVERAGEFLAGS) $(PROFILEFLAGS) -pipe \
+		$(ASANFLAGS)
 else
 	CFLAGS := -Wall -Wextra $(ANSIFLAGS) -O2 -pipe $(PROFILEFLAGS)
 	CXXFLAGS := -Wall -Wextra $(ANSIFLAGS) -O2 -pipe $(PROFILEFLAGS)
 endif
 CFLAGS += -I.
 CXXFLAGS += -I.
-LDFLAGS := -Wl,--no-undefined
-
+ifndef ASAN
+	LDFLAGS := -Wl,--no-undefined
+endif
 # Compiler specific settings. G++ requires output filtering, and Clang can do without
 # the caret stuff (switched on by VERBOSE)
 ifeq ($(CXX),g++)
