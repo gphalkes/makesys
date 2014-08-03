@@ -272,8 +272,8 @@ define RULE_TEMPLATE
 	$$(call _VERBOSE, $(call DISPLAYNAME.$(EXT))) $(COMPILE.$(EXT))
 endef
 
-$(foreach EXT, $(EXTENSIONS), $(eval $(TARGETS.$(EXT)): %.$(EXT); $(RULE_TEMPLATE)))
-$(foreach EXT, $(EXTENSIONS), $(eval $(TARGETS.$(EXT)): .objects/%.$(EXT); $(RULE_TEMPLATE)))
+$(foreach EXT, $(EXTENSIONS), $(eval $(TARGETS.$(EXT)): %.$(EXT) $(DEPS.$(EXT)) | $(ORDERDEPS.$(EXT)); $(RULE_TEMPLATE)))
+$(foreach EXT, $(EXTENSIONS), $(eval $(TARGETS.$(EXT)): .objects/%.$(EXT) $(DEPS.$(EXT)) | $(ORDERDEPS.$(EXT)); $(RULE_TEMPLATE)))
 
 
 # Block the implicit rule for lex files
