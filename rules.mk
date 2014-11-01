@@ -119,16 +119,19 @@ endif
 ifdef ASAN
 	ASANFLAGS := -fsanitize=address -fno-omit-frame-pointer
 endif
+ifdef MSAN
+	MSANFLAGS := -fsanitize=memory -fno-omit-frame-pointer -fsanitize-memory-track-origins
+endif
 ifeq ($(BUILDVERSION),debug)
 	CFLAGS := -Wall -Wextra -ggdb -DDEBUG -Wswitch-default \
 		-Wcast-align -Wbad-function-cast \
 		-Wcast-qual -Wwrite-strings -Wstrict-prototypes \
 		$(COVERAGEFLAGS) $(PROFILEFLAGS) $(ANSIFLAGS) -pipe \
-		$(ASANFLAGS)
+		$(ASANFLAGS) $(MSANFLAGS)
 	CXXFLAGS := -Wall -W -ggdb -DDEBUG -Wswitch-default \
 		-Wshadow -Wcast-align -Wcast-qual -Wwrite-strings \
 		$(COVERAGEFLAGS) $(PROFILEFLAGS) -pipe \
-		$(ASANFLAGS)
+		$(ASANFLAGS) $(MSANFLAGS)
 else
 	CFLAGS := -Wall -Wextra $(ANSIFLAGS) -O2 -pipe $(PROFILEFLAGS)
 	CXXFLAGS := -Wall -Wextra $(ANSIFLAGS) -O2 -pipe $(PROFILEFLAGS)
@@ -136,7 +139,9 @@ endif
 CFLAGS += -I.
 CXXFLAGS += -I.
 ifndef ASAN
+ifndef MSAN
 	LDFLAGS := -Wl,--no-undefined
+endif
 endif
 # Compiler specific settings. G++ requires output filtering, and Clang can do without
 # the caret stuff (switched on by VERBOSE)
