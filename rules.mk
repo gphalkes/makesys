@@ -97,6 +97,7 @@ MKPATH := $(dir $(lastword $(MAKEFILE_LIST)))
 L = $(foreach d,$(1),-L$(d) -Wl,-rpath=$(CURDIR)/$(d))
 
 BUILDVERSION ?= debug
+LTBUILD ?= libtool
 ifeq ($(COMPILER),gcc)
 CC := gcc
 CXX := g++
@@ -117,9 +118,11 @@ ifdef PROFILE
 	PROFILEFLAGS := -pg
 endif
 ifdef ASAN
+	LTBUILD=compiler
 	ASANFLAGS := -fsanitize=address -fno-omit-frame-pointer
 endif
 ifdef MSAN
+	LTBUILD=compiler
 	MSANFLAGS := -fsanitize=memory -fno-omit-frame-pointer -fsanitize-memory-track-origins
 endif
 ifeq ($(BUILDVERSION),debug)
@@ -229,6 +232,7 @@ $(foreach PART, $(CXXTARGETS), $(eval $(PART): $$(OBJECTS.$(PART)) ; \
 	$$(_VERBOSE_LD) $$(CXX) $$(CXXFLAGS) $$(CXXFLAGS.$(PART)) $$(LDFLAGS) $$(LDFLAGS.$(PART)) \
 		-o $$@ $$^ $$(LDLIBS) $$(LDLIBS.$(PART))))
 
+ifeq ($(LTBUILD), libtool)
 $(foreach PART, $(LTTARGETS), $(eval $(PART): $$(OBJECTS.$(PART)) ; \
 	$$(_VERBOSE_LDLT) libtool $(_VERBOSE_SILENT) --mode=link --tag=CC $$(CC) -shared $$(CFLAGS) $$(CFLAGS.$(PART)) $$(LDFLAGS) $$(LDFLAGS.$(PART)) \
 		-o $$@ $$^ $$(LDLIBS) $$(LDLIBS.$(PART)) -rpath /usr/lib))
@@ -236,6 +240,15 @@ $(foreach PART, $(LTTARGETS), $(eval $(PART): $$(OBJECTS.$(PART)) ; \
 $(foreach PART, $(CXXLTTARGETS), $(eval $(PART): $$(OBJECTS.$(PART)) ; \
 	$$(_VERBOSE_LDLT) libtool $(_VERBOSE_SILENT) --mode=link --tag=CXX $$(CXX) -shared $$(CXXFLAGS) $$(CXXFLAGS.$(PART)) $$(LDFLAGS) $$(LDFLAGS.$(PART)) \
 		-o $$@ $$^ $$(LDLIBS) $$(LDLIBS.$(PART)) -rpath /usr/lib))
+else
+$(foreach PART, $(LTTARGETS), $(eval $(PART): $$(OBJECTS.$(PART)) ; \
+	$$(_VERBOSE_LDLT) $$(CC) -shared $$(CFLAGS) $$(CFLAGS.$(PART)) $$(LDFLAGS) $$(LDFLAGS.$(PART)) \
+		-o $$(patsubst %.la,.libs/%.so,$$@) $$^ $$(LDLIBS) $$(LDLIBS.$(PART)) -Wl,-rpath /usr/lib && touch $$@))
+
+$(foreach PART, $(CXXLTTARGETS), $(eval $(PART): $$(OBJECTS.$(PART)) ; \
+	$$(_VERBOSE_LDLT) $$(CXX) -shared $$(CXXFLAGS) $$(CXXFLAGS.$(PART)) $$(LDFLAGS) $$(LDFLAGS.$(PART)) \
+		-o $$(patsubst %.la,.libs/%.so,$$@) $$^ $$(LDLIBS) $$(LDLIBS.$(PART)) -Wl,-rpath /usr/lib && touch $$@))
+endif
 
 # Add the per target CFLAGS/CXXFLAGS to each source file
 $(foreach PART, $(CTARGETS) $(LTTARGETS), $(foreach FILE, $(filter %.c, $(_SOURCES.$(PART))), \
@@ -247,29 +260,61 @@ $(foreach PART, $(CXXTARGETS) $(CXXLTTARGETS), $(foreach FILE, $(filter %.cc, $(
 # Add dependency rules for generated header files
 $(foreach PART, $(CTARGETS) $(LTTARGETS) $(CXXTARGETS) $(CXXLTTARGETS), $(eval $$(OBJECTS.$(PART)): $$(HEADERS.$(PART))))
 
+ifeq ($(LTBUILD), libtool)
 .objects/%.lo: %.c
 	$(GENDEPDIR)
 	$(GENOBJDIR)
 	$(_VERBOSE_CCLT) libtool $(_VERBOSE_SILENT) --mode=compile --tag=CC $(CC) -shared -MMD -MP -MF .deps/$< $(CFLAGS) $(CFLAGS.$*) $(LCFLAGS) -c $< -o $@
 	@sed -i -r 's/(\.libs\/)?([^/]+)\.o\>/\2\.lo/g' .deps/$<
+else
+.objects/%.lo: %.c
+	$(GENDEPDIR)
+	$(GENOBJDIR)
+	$(_VERBOSE_CCLT) $(CC) -fPIC -MMD -MP -MF .deps/$< $(CFLAGS) $(CFLAGS.$*) $(LCFLAGS) -c $< -o $@
+	@touch $@
+endif
 
+ifeq ($(LTBUILD), libtool)
 .objects/%.lo: .objects/%.c
 	$(GENDEPDIR)
 	$(GENOBJDIR)
 	$(_VERBOSE_CCLT) libtool $(_VERBOSE_SILENT) --mode=compile --tag=CC $(CC) -shared -MMD -MP -MF .deps/$< $(CFLAGS) $(CFLAGS.$*) $(LCFLAGS) -c $< -o $@
 	@sed -i -r 's/(\.libs\/)?([^/]+)\.o\>/\2\.lo/g' .deps/$<
+else
+.objects/%.lo: .objects/%.c
+	$(GENDEPDIR)
+	$(GENOBJDIR)
+	$(_VERBOSE_CCLT) $(CC) -fPIC -MMD -MP -MF .deps/$< $(CFLAGS) $(CFLAGS.$*) $(LCFLAGS) -c $< -o $@
+	@touch $@
+endif
 
+ifeq ($(LTBUILD), libtool)
 .objects/%.lo: %.cc
 	$(GENDEPDIR)
 	$(GENOBJDIR)
 	$(_VERBOSE_CXXLT) libtool $(_VERBOSE_SILENT) --mode=compile --tag=CXX $(CXX) -shared -MMD -MP -MF .deps/$< $(CXXFLAGS) $(CXXFLAGS.$*) $(LCXXFLAGS) -c $< -o $@
 	@sed -i -r 's/(\.libs\/)?([^/]+)\.o\>/\2\.lo/g' .deps/$<
+else
+.objects/%.lo: %.cc
+	$(GENDEPDIR)
+	$(GENOBJDIR)
+	$(_VERBOSE_CXXLT) $(CXX) -fPIC -MMD -MP -MF .deps/$< $(CXXFLAGS) $(CXXFLAGS.$*) $(LCXXFLAGS) -c $< -o $@
+	@touch $@
+endif
 
+ifeq ($(LTBUILD), libtool)
 .objects/%.lo: .objects/%.cc
 	$(GENDEPDIR)
 	$(GENOBJDIR)
 	$(_VERBOSE_CXXLT) libtool $(_VERBOSE_SILENT) --mode=compile --tag=CXX $(CXX) -shared -MMD -MP -MF .deps/$< $(CXXFLAGS) $(CXXFLAGS.$*) $(LCXXFLAGS) -c $< -o $@
 	@sed -i -r 's/(\.libs\/)?([^/]+)\.o\>/\2\.lo/g' .deps/$<
+else
+.objects/%.lo: .objects/%.cc
+	$(GENDEPDIR)
+	$(GENOBJDIR)
+	$(_VERBOSE_CXXLT) $(CXX) -fPIC -MMD -MP -MF .deps/$< $(CXXFLAGS) $(CXXFLAGS.$*) $(LCXXFLAGS) -c $< -o $@
+	@touch $@
+endif
 
 define RULE_TEMPLATE
 	$$(GENDEPDIR)
