@@ -92,6 +92,8 @@ endif
 _GENDIR = @ [ -d $(1)/`dirname '$(2)'` ] || mkdir -p $(1)/`dirname '$(2)'`
 GENOBJDIR = $(call _GENDIR,.objects,$<)
 GENDEPDIR = $(call _GENDIR,.deps,$<)
+_GENDIR_ECHO = [ -d `dirname '$(2)'`/$(1) ] || mkdir -p `dirname '$(2)'`/$(1)
+GENLIBDIR = $(call _GENDIR_ECHO,.libs,$@)
 
 MKPATH := $(dir $(lastword $(MAKEFILE_LIST)))
 L = $(foreach d,$(1),-L$(d) -Wl,-rpath=$(CURDIR)/$(d))
@@ -130,11 +132,11 @@ ifeq ($(BUILDVERSION),debug)
 		-Wcast-align -Wbad-function-cast \
 		-Wcast-qual -Wwrite-strings -Wstrict-prototypes \
 		$(COVERAGEFLAGS) $(PROFILEFLAGS) $(ANSIFLAGS) -pipe \
-		$(ASANFLAGS) $(MSANFLAGS)
+		$(ASANFLAGS) $(MSANFLAGS) $(EXTRACFLAGS)
 	CXXFLAGS := -Wall -W -ggdb -DDEBUG -Wswitch-default \
 		-Wshadow -Wcast-align -Wcast-qual -Wwrite-strings \
 		$(COVERAGEFLAGS) $(PROFILEFLAGS) -pipe \
-		$(ASANFLAGS) $(MSANFLAGS)
+		$(ASANFLAGS) $(MSANFLAGS) $(EXTRACXXFLAGS)
 else
 	CFLAGS := -Wall -Wextra $(ANSIFLAGS) -O2 -pipe $(PROFILEFLAGS)
 	CXXFLAGS := -Wall -Wextra $(ANSIFLAGS) -O2 -pipe $(PROFILEFLAGS)
@@ -242,12 +244,12 @@ $(foreach PART, $(CXXLTTARGETS), $(eval $(PART): $$(OBJECTS.$(PART)) ; \
 		-o $$@ $$^ $$(LDLIBS) $$(LDLIBS.$(PART)) -rpath /usr/lib))
 else
 $(foreach PART, $(LTTARGETS), $(eval $(PART): $$(OBJECTS.$(PART)) ; \
-	$$(_VERBOSE_LDLT) $$(CC) -shared $$(CFLAGS) $$(CFLAGS.$(PART)) $$(LDFLAGS) $$(LDFLAGS.$(PART)) \
-		-o $$(patsubst %.la,.libs/%.so,$$@) $$^ $$(LDLIBS) $$(LDLIBS.$(PART)) -Wl,-rpath /usr/lib && touch $$@))
+	$$(_VERBOSE_LDLT) $$(GENLIBDIR) && $$(CC) -shared $$(CFLAGS) $$(CFLAGS.$(PART)) $$(LDFLAGS) $$(LDFLAGS.$(PART)) \
+		-o `dirname $$@`/.libs/`basename $$@ .la`.so $$^ $$(LDLIBS) $$(LDLIBS.$(PART)) -Wl,-rpath /usr/lib && touch $$@))
 
 $(foreach PART, $(CXXLTTARGETS), $(eval $(PART): $$(OBJECTS.$(PART)) ; \
-	$$(_VERBOSE_LDLT) $$(CXX) -shared $$(CXXFLAGS) $$(CXXFLAGS.$(PART)) $$(LDFLAGS) $$(LDFLAGS.$(PART)) \
-		-o $$(patsubst %.la,.libs/%.so,$$@) $$^ $$(LDLIBS) $$(LDLIBS.$(PART)) -Wl,-rpath /usr/lib && touch $$@))
+	$$(_VERBOSE_LDLT) $$(GENLIBDIR) && $$(CXX) -shared $$(CXXFLAGS) $$(CXXFLAGS.$(PART)) $$(LDFLAGS) $$(LDFLAGS.$(PART)) \
+		-o `dirname $$@`/.libs/`basename $$@ .la`.so $$^ $$(LDLIBS) $$(LDLIBS.$(PART)) -Wl,-rpath /usr/lib && touch $$@))
 endif
 
 # Add the per target CFLAGS/CXXFLAGS to each source file
