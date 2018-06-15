@@ -141,8 +141,6 @@ else
 	CFLAGS := -Wall -Wextra $(ANSIFLAGS) -O2 -pipe $(PROFILEFLAGS)
 	CXXFLAGS := -Wall -Wextra $(ANSIFLAGS) -O2 -pipe $(PROFILEFLAGS)
 endif
-CFLAGS += -I.
-CXXFLAGS += -I.
 ifndef ASAN
 ifndef MSAN
 	LDFLAGS := -Wl,--no-undefined
